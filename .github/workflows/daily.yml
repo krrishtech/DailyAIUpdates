@@ -6,6 +6,12 @@ on:
     - cron: "30 1 * * *"
   workflow_dispatch: {}   # lets you trigger it manually from the Actions tab
 
+# Needed so this workflow is allowed to push a commit back to the repo
+# (updating dedup_history.json). Without this, the default token is
+# read-only and the push step below would fail.
+permissions:
+  contents: write
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -23,3 +29,23 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python send_hello.py
+
+      # Temporary: runs dedup_filter.py's own demo call so there's a
+      # real dedup_history.json to test the commit-back step against.
+      # This step gets replaced once Step 4/5 wires the actual daily
+      # pipeline (fetch -> dedup -> relevance -> curate -> deliver)
+      # into one script.
+      - name: Run dedup filter (temporary, for testing persistence)
+        run: python dedup_filter.py
+
+      # Commit dedup_history.json back to the repo so tomorrow's run
+      # (a fresh machine, no memory of today) can load it and actually
+      # detect cross-day duplicates. Skips committing if nothing changed,
+      # so this never creates empty commits on quiet days.
+      - name: Persist dedup history
+        run: |
+          git config user.name "daily-ai-feed-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add dedup_history.json
+          git diff --cached --quiet || git commit -m "Update dedup history [skip ci]"
+          git push
