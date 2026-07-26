@@ -26,19 +26,12 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Send message
+      - name: Run daily feed pipeline
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python send_hello.py
-
-      # Temporary: runs dedup_filter.py's own demo call so there's a
-      # real dedup_history.json to test the commit-back step against.
-      # This step gets replaced once Step 4/5 wires the actual daily
-      # pipeline (fetch -> dedup -> relevance -> curate -> deliver)
-      # into one script.
-      - name: Run dedup filter (temporary, for testing persistence)
-        run: python dedup_filter.py
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python run_daily_feed.py
 
       # Commit dedup_history.json back to the repo so tomorrow's run
       # (a fresh machine, no memory of today) can load it and actually
