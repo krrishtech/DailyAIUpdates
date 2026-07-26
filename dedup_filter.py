@@ -121,10 +121,15 @@ def dedup_items(
 
 
 if __name__ == "__main__":
+    # Includes a timestamp so this item is guaranteed to be new on every
+    # run — proves the commit-back step actually fires when there's real
+    # new history to save, not just when there's nothing to do.
+    unique_marker = datetime.now(timezone.utc).isoformat()
     sample_items = [
         {"title": "Sezzle: AI Engineer II (Remote)"},
         {"title": "Sezzle: AI Engineer II (Remote)"},  # exact within-batch dupe
         {"title": "LaunchDarkly: Backend Engineer, Flag Delivery"},
+        {"title": f"Test item for persistence check — {unique_marker}"},
     ]
     kept = dedup_items(sample_items, history_path="dedup_history.json")
     print(f"Kept {len(kept)} of {len(sample_items)} items:")
